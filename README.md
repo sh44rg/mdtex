@@ -2,6 +2,13 @@
 
 A Markdown viewer that renders documents with the look of a LaTeX PDF: Latin Modern type, a narrow justified column, hyphenation, indented paragraphs, and KaTeX math. Available as a web page (Vite) and as a native macOS app (Swift + WKWebView) for Apple silicon.
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshot-1.png" alt="mdtex showing a document with LaTeX-style typography" width="48%">
+  <img src="docs/screenshot-2.png" alt="mdtex showing math, a booktabs table and code" width="48%">
+</p>
+
 ## Web
 
 ```sh
