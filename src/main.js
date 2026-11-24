@@ -131,7 +131,7 @@ if (!isApp) {
 
 // Drag and drop anywhere on the page.
 let dragDepth = 0
-const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes('Files')
+const hasFiles = (e) => !isApp && e.dataTransfer && [...e.dataTransfer.types].includes('Files')
 
 window.addEventListener('dragenter', (e) => {
   if (!hasFiles(e)) return

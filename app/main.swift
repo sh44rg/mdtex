@@ -107,17 +107,82 @@ final class ResourceHandler: NSObject, WKURLSchemeHandler {
     }
 }
 
-/// One window showing one document (or the sample, when there is no file).
+/// Reads Finder drops as file URLs so they open through the normal document loader.
+final class DocumentWebView: WKWebView {
+    var onFileDrop: (([URL]) -> Bool)?
+    private var acceptsFileDrop = false
+
+    private func fileURLs(from pasteboard: NSPasteboard) -> [URL]? {
+        guard pasteboard.types?.contains(.fileURL) == true else { return nil }
+        return (pasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL] ?? []).filter { url in
+            guard let info = try? url.resourceValues(forKeys: [.isRegularFileKey, .contentTypeKey]),
+                info.isRegularFile == true, let type = info.contentType else { return false }
+            return type.conforms(to: markdownType) || type.conforms(to: .plainText)
+        }
+    }
+
+    private func showDropOverlay(_ visible: Bool) {
+        evaluateJavaScript(
+            "document.getElementById('drop')?.classList.toggle('on', \(visible))",
+            completionHandler: nil
+        )
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard let urls = fileURLs(from: sender.draggingPasteboard) else {
+            return super.draggingEntered(sender)
+        }
+        acceptsFileDrop = !urls.isEmpty && sender.draggingSourceOperationMask.contains(.copy)
+        guard acceptsFileDrop else { return [] }
+        showDropOverlay(true)
+        return .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard sender.draggingPasteboard.types?.contains(.fileURL) == true else {
+            return super.draggingUpdated(sender)
+        }
+        return acceptsFileDrop ? .copy : []
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        if acceptsFileDrop { showDropOverlay(false) }
+        acceptsFileDrop = false
+        if sender?.draggingPasteboard.types?.contains(.fileURL) != true {
+            super.draggingExited(sender)
+        }
+    }
+
+    override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard sender.draggingPasteboard.types?.contains(.fileURL) == true else {
+            return super.prepareForDragOperation(sender)
+        }
+        return acceptsFileDrop
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = fileURLs(from: sender.draggingPasteboard) else {
+            return super.performDragOperation(sender)
+        }
+        showDropOverlay(false)
+        acceptsFileDrop = false
+        return onFileDrop?(urls) ?? false
+    }
+}
+
+/// One document with its own web view and native window, which can also be a tab.
 final class DocumentWindow: NSObject, NSWindowDelegate, WKNavigationDelegate {
     let window: NSWindow
-    let webView: WKWebView
-    let fileURL: URL?
+    let webView: DocumentWebView
+    private(set) var fileURL: URL?
     var onClose: ((DocumentWindow) -> Void)?
     private var webViewTop: NSLayoutConstraint
     private var findBar: FindBar?
 
-    init(fileURL: URL?, webView: WKWebView) {
-        self.fileURL = fileURL?.standardizedFileURL
+    init(fileURL: URL?, webView: DocumentWebView) {
         self.webView = webView
         let zoom = UserDefaults.standard.double(forKey: zoomKey)
         webView.pageZoom = zoom > 0 ? zoom : 1
@@ -140,8 +205,6 @@ final class DocumentWindow: NSObject, NSWindowDelegate, WKNavigationDelegate {
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
         window.minSize = NSSize(width: 420, height: 320)
-        window.title = fileURL?.lastPathComponent ?? "mdtex"
-        window.representedURL = fileURL
         let content = NSView()
         window.contentView = content
         webView.translatesAutoresizingMaskIntoConstraints = false
@@ -157,7 +220,14 @@ final class DocumentWindow: NSObject, NSWindowDelegate, WKNavigationDelegate {
         super.init()
         window.delegate = self
         webView.navigationDelegate = self
+        load(fileURL)
+    }
 
+    func load(_ fileURL: URL?) {
+        hideFindBar()
+        self.fileURL = fileURL?.standardizedFileURL
+        window.title = fileURL?.lastPathComponent ?? "mdtex"
+        window.representedURL = fileURL
         var page = "\(ResourceHandler.scheme)://app/index.html"
         if let path = self.fileURL?.path,
            let encoded = path.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
@@ -267,7 +337,7 @@ final class DocumentWindow: NSObject, NSWindowDelegate, WKNavigationDelegate {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     private var documents: [DocumentWindow] = []
-    private var idleWebView: WKWebView?
+    private var idleWebView: DocumentWebView?
     private var cascadePoint = NSPoint.zero
     private lazy var handler = ResourceHandler(
         webRoot: Bundle.main.resourceURL!.appendingPathComponent("web", isDirectory: true)
@@ -310,14 +380,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         document.documentDidRender(name: name, fromPath: fromPath)
     }
 
-    private func makeWebView() -> WKWebView {
+    private func makeWebView() -> DocumentWebView {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(handler, forURLScheme: ResourceHandler.scheme)
         config.userContentController.add(self, name: "documentRendered")
         setFontPreference(UserDefaults.standard.bool(forKey: sansSerifKey), on: config.userContentController)
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = DocumentWebView(frame: .zero, configuration: config)
         webView.underPageBackgroundColor = .white
         webView.allowsMagnification = true
+        webView.registerForDraggedTypes(Array(Set(webView.registeredDraggedTypes + [.fileURL])))
         return webView
     }
 
@@ -328,20 +399,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             open.window.makeKeyAndOrderFront(nil)
             return
         }
-        let webView = idleWebView ?? makeWebView()
-        idleWebView = nil
-        let doc = DocumentWindow(fileURL: target, webView: webView)
-        doc.onClose = { [weak self] closed in
-            self?.documentClosed(closed)
-        }
-        if documents.isEmpty {
+        let firstWindow = documents.isEmpty
+        let doc = makeDocument(target)
+        if firstWindow {
             doc.window.center()
             cascadePoint = .zero
         }
         cascadePoint = doc.window.cascadeTopLeft(from: cascadePoint)
-        documents.append(doc)
         doc.window.makeKeyAndOrderFront(nil)
         if let target { NSDocumentController.shared.noteNewRecentDocumentURL(target) }
+    }
+
+    private func makeDocument(_ url: URL?) -> DocumentWindow {
+        let webView = idleWebView ?? makeWebView()
+        idleWebView = nil
+        let doc = DocumentWindow(fileURL: url, webView: webView)
+        doc.onClose = { [weak self] closed in self?.documentClosed(closed) }
+        webView.onFileDrop = { [weak self, weak doc] urls in
+            guard let self, let doc else { return false }
+            return self.openDroppedFiles(urls, in: doc)
+        }
+        documents.append(doc)
+        return doc
+    }
+
+    private func openDroppedFiles(_ urls: [URL], in destination: DocumentWindow) -> Bool {
+        var seen: Set<URL> = []
+        var lastTab = destination.window.tabGroup?.windows.last ?? destination.window
+        var firstDropped: DocumentWindow?
+        for url in urls.map(\.standardizedFileURL) where seen.insert(url).inserted {
+            let group = destination.window.tabGroup?.windows ?? [destination.window]
+            let doc: DocumentWindow
+            if let existing = documents.first(where: { $0.fileURL == url && group.contains($0.window) }) {
+                doc = existing
+            } else {
+                if destination.fileURL == nil {
+                    doc = destination
+                    doc.load(url)
+                } else {
+                    doc = makeDocument(url)
+                    lastTab.addTabbedWindow(doc.window, ordered: .above)
+                    lastTab = doc.window
+                }
+                NSDocumentController.shared.noteNewRecentDocumentURL(url)
+            }
+            if firstDropped == nil { firstDropped = doc }
+        }
+        firstDropped?.window.makeKeyAndOrderFront(nil)
+        return firstDropped != nil
     }
 
     private func documentClosed(_ document: DocumentWindow) {

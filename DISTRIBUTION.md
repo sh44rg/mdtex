@@ -2,7 +2,7 @@
 
 Run `./build-release.sh` on a Mac with Xcode command-line tools, Node.js and
 the project's npm dependencies installed. The resulting disk image is written
-to `release/mdtex-1.0-apple-silicon.dmg` (the version comes from Info.plist).
+to `release/mdtex-<version>-apple-silicon.dmg` (the version comes from Info.plist).
 The recipient only needs an Apple silicon Mac running macOS 13 or later; Node
 and the source files are not needed. The image includes an Applications link
 and installation instructions.
