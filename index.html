@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mdtex</title>
+    <link rel="preload" href="/node_modules/latex.css/fonts/LM-regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <span class="bar-name" id="name"></span>
+      <button class="bar-open" id="open" type="button" title="Open a markdown file (⌘O)">Open…</button>
+      <input id="file" type="file" accept=".md,.markdown,.mdown,.txt,text/markdown,text/plain" hidden />
+    </header>
+
+    <main>
+      <article class="doc" id="doc" lang="en"></article>
+    </main>
+
+    <div class="drop" id="drop" aria-hidden="true"><span>Drop to open</span></div>
+
+    <script type="module" src="/src/main.js"></script>
+    <!-- mdtex:initial-source -->
+  </body>
+</html>

@@ -1,0 +1,14 @@
+mdtex for Mac
+
+Requires an Apple silicon Mac and macOS 13 or later.
+
+1. Drag mdtex into the Applications folder in this window.
+2. Open mdtex from Applications. Use File > Open to view a Markdown file.
+3. To open Markdown files in mdtex by default, choose mdtex > Make Default
+   Markdown Viewer from the menu bar.
+
+This copy may be distributed without Apple notarization. If macOS blocks it,
+first try opening it, then go to System Settings > Privacy & Security and
+look for Open Anyway. Only do this if you trust the person who sent it and
+the file has not been tampered with. For Apple's instructions, see:
+https://support.apple.com/en-us/102445

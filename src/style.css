@@ -1,0 +1,405 @@
+/* Latin Modern: the typeface of a default LaTeX document. */
+@font-face {
+  font-family: 'Latin Modern';
+  src: url('../node_modules/latex.css/fonts/LM-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Latin Modern';
+  src: url('../node_modules/latex.css/fonts/LM-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Latin Modern';
+  src: url('../node_modules/latex.css/fonts/LM-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Latin Modern';
+  src: url('../node_modules/latex.css/fonts/LM-bold-italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/InterVariable-Italic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --paper: #fff;
+  --ink: #1a1a1a;
+  --muted: #6b6b6b;
+  --rule: #1a1a1a;
+  --link: #7a1f1f;
+  --code-bg: #f6f5f1;
+  --measure: 34rem; /* roughly the line length of a LaTeX article */
+  --serif: 'Latin Modern', 'Latin Modern Roman', 'CMU Serif', Georgia, 'Times New Roman', serif;
+  --sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --mono: 'Latin Modern Mono', 'CMU Typewriter Text', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+html.sans-serif body {
+  font-family: var(--sans-serif);
+  font-weight: 380;
+}
+
+html.sans-serif .doc :is(strong, b, h1:not(.title), h2, h3) {
+  font-weight: 650;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 19px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures;
+}
+
+/* ── Top bar: stays out of the way until you reach for it ── */
+
+.bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.bar:hover,
+.bar:focus-within {
+  opacity: 1;
+}
+.bar-name {
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-open {
+  margin-left: auto;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0.5px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.15rem 0.7rem 0.2rem;
+  cursor: pointer;
+}
+.bar-open:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.bar-open:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* Keep the document from rubber-banding sideways in the Mac app. */
+html.app {
+  overscroll-behavior-x: none;
+}
+
+/* The Mac app has a native menu instead. */
+.app .bar {
+  display: none;
+}
+
+/* ── The document ── */
+
+main {
+  padding: 5.5rem 1.25rem 7rem;
+}
+
+/* Keep WebKit's selection gaps within the text column and indented list items. */
+.doc,
+.doc li {
+  position: relative;
+}
+
+::highlight(mdtex-find) {
+  color: #1a1a1a;
+  background-color: #ffec90;
+}
+
+::highlight(mdtex-find-current) {
+  color: #1a1a1a;
+  background-color: #ffb44c;
+}
+
+.doc {
+  max-width: var(--measure);
+  margin: 0 auto;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphenate-limit-chars: 6 3 3;
+  overflow-wrap: break-word;
+}
+
+.doc > :first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs: no gap between them, first line indented, as in TeX.
+   The paragraph after a heading (or anything else) is not indented. */
+.doc p {
+  margin: 0;
+}
+.doc p + p {
+  text-indent: 1.5em;
+}
+.doc :is(ul, ol, blockquote, pre, .table-wrap, hr, .figure) + p {
+  margin-top: 0.9rem;
+}
+
+/* Headings, sized like \section, \subsection, \subsubsection. */
+.doc :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  hyphens: none;
+  -webkit-hyphens: none;
+  text-wrap: balance;
+  margin: 2rem 0 0.8rem;
+}
+.doc h1 {
+  font-size: 1.44rem;
+}
+.doc h2 {
+  font-size: 1.2rem;
+  margin-top: 1.7rem;
+}
+.doc h3 {
+  font-size: 1rem;
+  margin-top: 1.4rem;
+  margin-bottom: 0.6rem;
+}
+.doc :is(h4, h5, h6) {
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 400;
+  margin: 1.2rem 0 0.4rem;
+}
+
+/* The opening heading is set like \maketitle. */
+.doc h1.title {
+  font-size: 1.73rem;
+  font-weight: 400;
+  text-align: center;
+  margin: 0 0 2.4rem;
+}
+
+.doc a {
+  color: var(--link);
+  text-decoration: none;
+}
+.doc a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 0.15em;
+}
+
+/* Lists */
+.doc :is(ul, ol) {
+  margin: 0.7rem 0;
+  padding-left: 2em;
+}
+.doc li {
+  margin: 0.25rem 0;
+}
+.doc li > :is(ul, ol) {
+  margin: 0.25rem 0;
+}
+.doc li p + p {
+  text-indent: 0;
+  margin-top: 0.4rem;
+}
+.doc ul {
+  list-style: disc;
+}
+.doc ul ul {
+  list-style: '–  ';
+}
+.doc ul ul ul {
+  list-style: '∗  ';
+}
+
+/* Quotation environment: indented on both sides, no bar. */
+.doc blockquote {
+  margin: 0.9rem 2em;
+  padding: 0;
+}
+
+/* Code, in the manner of verbatim / listings. */
+.doc code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+.doc pre {
+  margin: 0.9rem 0;
+  padding: 0.7rem 0.9rem;
+  background: var(--code-bg);
+  border-top: 0.5px solid var(--rule);
+  border-bottom: 0.5px solid var(--rule);
+  overflow-x: auto;
+  text-align: left;
+  line-height: 1.4;
+}
+.doc pre code {
+  font-size: 0.78rem;
+  white-space: pre;
+}
+
+/* KaTeX uses Computer Modern math, matching the document's Latin Modern text. */
+.doc .katex {
+  font-size: 1.05em;
+  text-indent: 0;
+  text-align: initial;
+  overflow-wrap: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+.doc .katex-display {
+  margin: 1.2rem 0;
+  padding: 0.2rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-indent: 0;
+  break-inside: avoid;
+}
+.doc .katex-display > .katex {
+  text-align: center;
+}
+.doc p.katex-block,
+.doc p.katex-block + p {
+  text-indent: 0;
+}
+
+/* Tables in booktabs style: heavy rules top and bottom, a light one under the head. */
+.doc .table-wrap {
+  margin: 1.2rem 0;
+  overflow-x: auto;
+}
+.doc table {
+  margin: 0 auto;
+  border-collapse: collapse;
+  border-top: 1.5px solid var(--rule);
+  border-bottom: 1.5px solid var(--rule);
+  text-align: left;
+  hyphens: none;
+  -webkit-hyphens: none;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.doc :is(th, td) {
+  padding: 0.3rem 0.8rem;
+  vertical-align: top;
+}
+.doc th {
+  font-weight: 400;
+  border-bottom: 0.75px solid var(--rule);
+}
+
+.doc hr {
+  border: 0;
+  border-top: 0.5px solid var(--rule);
+  width: 33%;
+  margin: 1.8rem auto;
+}
+
+.doc img {
+  max-width: 100%;
+  height: auto;
+}
+.doc p.figure {
+  margin: 1.3rem 0;
+  text-align: center;
+  text-indent: 0;
+}
+.doc .caption {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* ── Drop overlay ── */
+
+.drop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgb(255 255 255 / 0.92);
+  font-size: 1.4rem;
+  font-style: italic;
+  pointer-events: none;
+}
+.drop.on {
+  display: flex;
+}
+.drop span {
+  padding: 1rem 2rem;
+  border-top: 1.5px solid var(--rule);
+  border-bottom: 1.5px solid var(--rule);
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 17px;
+  }
+  main {
+    padding-top: 4rem;
+  }
+  .doc blockquote {
+    margin-inline: 1.2em;
+  }
+}
+
+@media print {
+  .bar,
+  .drop {
+    display: none;
+  }
+  main {
+    padding: 0;
+  }
+}

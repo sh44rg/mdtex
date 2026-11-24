@@ -1,0 +1,22 @@
+{
+  "name": "mdtex",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A markdown viewer that renders documents with the look of a LaTeX PDF",
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/*.test.js",
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  },
+  "dependencies": {
+    "@mdit/plugin-katex": "^1.2.0",
+    "katex": "^0.19.1",
+    "latex.css": "^1.14.0",
+    "markdown-it": "^15.0.3"
+  }
+}
